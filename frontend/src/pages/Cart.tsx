@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { assets } from "../assets/assets";
-
+import SepayPaymentModal from "../components/SepayPaymentModal";
 const Cart = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [address, setAddress] = useState("");
   const [showAddress, setShowAddress] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("COD");
+const [showSepayModal, setShowSepayModal] = useState(false);
+const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const getUserInfo = () => {
@@ -85,64 +89,90 @@ const Cart = () => {
   };
 
   const placeOrder = async () => {
-    if (products.length === 0) {
-      alert("Giỏ hàng trống, vui lòng chọn sản phẩm trước khi đặt hàng.");
-      return;
-    }
-    if (!address || address.trim() === "") {
-      alert("Vui lòng nhập địa chỉ giao hàng hợp lệ.");
-      return;
-    }
+  if (products.length === 0) {
+    alert("Giỏ hàng trống, vui lòng chọn sản phẩm trước khi đặt hàng.");
+    return;
+  }
+  if (!address || address.trim() === "") {
+    alert("Vui lòng nhập địa chỉ giao hàng hợp lệ.");
+    return;
+  }
 
-    const userInfo = getUserInfo();
-    const userId = userInfo._id;
+  const userInfo = getUserInfo();
+  const userId = userInfo._id;
 
-    if (!userId) {
-      alert("Thông tin người dùng chưa đầy đủ hoặc bị thiếu.");
-      return;
-    }
+  if (!userId) {
+    alert("Thông tin người dùng chưa đầy đủ hoặc bị thiếu.");
+    return;
+  }
 
-    const orderData = {
-      customerId: userId,
-      items: products.map((product) => ({
-        productId: product._id,
-        supplierId: String(product.supplierId && product.supplierId._id ? product.supplierId._id : product.supplierId).trim(),
-        quantity: product.quantity,
-        price: product.price,
-      })),
-      totalAmount: totalWithTax,
-      shippingAddress: address,
-      paymentMethod: "Thanh toán khi nhận hàng",
-      status: "Chờ xác nhận",
-    };
-
-    console.log("Dữ liệu gửi lên server:", orderData);
-
-    try {
-      const response = await fetch("http://localhost:5000/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData),
-      });
-
-      if (response.ok) {
-        localStorage.removeItem("cart");
-        navigate("/myorder");
-      } else {
-        alert("Đặt hàng không thành công!");
-      }
-    } catch (error) {
-      console.error("Lỗi khi đặt hàng:", error);
-      alert("Đặt hàng không thành công!");
-    }
+  const orderData = {
+    customerId: userId,
+    items: products.map((product) => ({
+      productId: product._id,
+      supplierId: String(product.supplierId && product.supplierId._id ? product.supplierId._id : product.supplierId).trim(),
+      quantity: product.quantity,
+      price: product.price,
+    })),
+    totalAmount: totalWithTax,
+    shippingAddress: address,
+    paymentMethod: paymentMethod === "Online" ? "Thanh toán trực tuyến" : "Thanh toán khi nhận hàng",
+    status: paymentMethod === "Online" ? "Chờ thanh toán" : "Chờ xác nhận",
   };
+
+  try {
+    const response = await fetch("http://localhost:5000/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(orderData),
+    });
+
+    if (!response.ok) {
+      alert("Đặt hàng không thành công!");
+      return;
+    }
+
+    const newOrder = await response.json();
+    console.log("🧾 Tạo đơn mới:", newOrder);
+    if (paymentMethod === "Online") {
+      setCurrentOrderId(newOrder._id);
+      setShowSepayModal(true);
+    } else {
+      localStorage.removeItem("cart");
+      navigate("/myorder");
+    }
+  } catch (error) {
+    console.error("Lỗi khi đặt hàng:", error);
+    alert("Đặt hàng không thành công!");
+  }
+};
+
+// 🔁 Auto-check trạng thái thanh toán
+  useEffect(() => {
+    if (!showSepayModal || !currentOrderId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/orders/${currentOrderId}`);
+        const data = await res.json();
+        if (data?.isPaid) {
+          clearInterval(interval);
+          setShowSepayModal(false);
+          localStorage.removeItem("cart");
+          toast.success("✅ Thanh toán thành công!");
+          navigate("/myorder");
+        }
+      } catch (err) {
+        console.error("Lỗi kiểm tra đơn hàng:", err);
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [showSepayModal, currentOrderId]);
   return (
     <div className="flex flex-col md:flex-row py-16 max-w-6xl w-full px-6 mx-auto">
       <div className="flex-1 max-w-4xl">
         <h1 className="text-3xl font-medium mb-6">
           Giỏ hàng <span className="text-sm text-green-500">{totalQuantity} sản phẩm</span>
         </h1>
-
         <div className="grid grid-cols-[2fr_1fr_1fr] text-gray-500 text-base font-medium pb-3">
           <p className="text-left">Thông tin chi tiết sản phẩm</p>
           <p className="text-center">Tổng tiền</p>
@@ -244,7 +274,11 @@ const Cart = () => {
           </div>
 
           <p className="text-sm font-medium uppercase mt-6">Phương thức thanh toán</p>
-          <select className="w-full border border-gray-300 bg-white px-3 py-2 mt-2 outline-none">
+          <select
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+            className="w-full border border-gray-300 bg-white px-3 py-2 mt-2 outline-none"
+          >
             <option value="COD">Tiền mặt khi nhận hàng</option>
             <option value="Online">Thanh toán trực tuyến</option>
           </select>
@@ -273,6 +307,18 @@ const Cart = () => {
         >
           Thanh toán
         </button>
+        {currentOrderId && (
+          <SepayPaymentModal
+            open={showSepayModal}
+            onClose={() => {
+              setShowSepayModal(false);
+              navigate("/myorder");
+              localStorage.removeItem("cart");
+            }}
+            orderId={currentOrderId}
+            amount={totalWithTax}
+          />
+        )}
       </div>
     </div>
   );

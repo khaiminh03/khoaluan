@@ -51,5 +51,12 @@ async getRevenueBySupplier(
 ) {
   return this.ordersService.calculateRevenueBySupplier(supplierId, from, to);
 }
-
+@Get(':id')
+async getOrderById(@Param('id') id: string) {
+  const order = await this.ordersService.findById(id);
+  if (!order) {
+    throw new HttpException('Đơn hàng không tồn tại', HttpStatus.NOT_FOUND);
+  }
+  return order;
+}
 }

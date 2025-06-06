@@ -40,7 +40,7 @@ const SupplierOrders = () => {
 
   useEffect(() => {
   const supplierInfo = JSON.parse(localStorage.getItem("user_info") || "{}");
-  const supplierId = supplierInfo.sub;
+  const supplierId = supplierInfo._id;
 
   const fetchOrders = async () => {
     if (!supplierId) return;

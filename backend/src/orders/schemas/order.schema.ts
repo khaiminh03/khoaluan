@@ -47,7 +47,7 @@ export class Order {
 
   @Prop({ default: false }) // <-- Thêm dòng này
   isReviewed?: boolean;
-  
+
 }
 
 export type OrderDocument = Order & Document;

@@ -33,13 +33,22 @@ import ProtectedRoute from "./components/ProtectedRoute";
 const App: React.FC = () => {
   const location = useLocation();
 
-  return (
-    <div>
-      {/* Ẩn Navbar trong admin/seller */}
-      {!location.pathname.startsWith("/seller") &&
-        !location.pathname.startsWith("/admin") && <Navbar />}
+  const publicPaths = [
+    "/", "/add", "/sp", "/dangky", "/login", "/product", "/cart",
+    "/myorder", "/products", "/search", "/verify-email",
+    "/forgot-password", "/reset-password"
+  ];
 
-      <div className="px-6 md:px-16 lg:px-24 xl:px-32">
+  const isPublicRoute = publicPaths.some(path =>
+    location.pathname === path || location.pathname.startsWith(path + "/")
+  );
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* Hiển thị Navbar chỉ trên public routes */}
+      {isPublicRoute && <Navbar />}
+
+      <div className="flex-1 px-6 md:px-16 lg:px-24 xl:px-32">
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
@@ -93,6 +102,9 @@ const App: React.FC = () => {
         </Routes>
       </div>
 
+      {/* Hiển thị Footer chỉ trên public routes */}
+      {isPublicRoute && <Footer />}
+
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -104,7 +116,6 @@ const App: React.FC = () => {
         draggable
         pauseOnHover
       />
-      <Footer />
     </div>
   );
 };

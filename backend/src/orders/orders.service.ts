@@ -130,6 +130,30 @@ async getOrdersWithProductDetails() {
 
     return order;
   }
+//   async markOrderStatus(orderId: string, status: string, transactionId?: string) {
+//   if (!orderId) {
+//     throw new BadRequestException('Thiếu ID đơn hàng');
+//   }
+
+//   const updateData: Record<string, any> = { status };
+
+//   if (transactionId) {
+//     updateData.transactionId = transactionId;
+//   }
+
+//   const order = await this.orderModel.findByIdAndUpdate(
+//     orderId,
+//     { $set: updateData },
+//     { new: true },
+//   );
+
+//   if (!order) {
+//     throw new NotFoundException(`Không tìm thấy đơn hàng với ID ${orderId}`);
+//   }
+
+//   return order;
+// }
+
    // danh thu 
    async calculateRevenueBySupplier(
     supplierId: string,
@@ -175,5 +199,19 @@ async getOrdersWithProductDetails() {
       totalProductsSold: 0,
     };
   }
+//
+async markAsPaid(orderId: string): Promise<OrderDocument> {
+  const order = await this.orderModel.findById(orderId);
+  if (!order) {
+    throw new NotFoundException('Không tìm thấy đơn hàng');
+  }
+
+  order.isPaid = true;
+  order.status = 'Đã thanh toán';
+  return await order.save();
+}
+async findById(orderId: string) {
+  return this.orderModel.findById(orderId).exec();
+}
 
 }

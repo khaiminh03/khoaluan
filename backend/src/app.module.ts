@@ -10,7 +10,7 @@ import googleOAuthConfig from './auth/config/google-oauth.config';
 import { OrdersModule } from './orders/orders.module';
 import { StoreProfileModule } from './store-profile/store-profile.module';
 import {ReviewModule} from './reviews/review.module';
-
+import { PaymentModule } from './payment/payment.module';
 @Module({
   imports: [
       ConfigModule.forRoot({
@@ -25,6 +25,9 @@ import {ReviewModule} from './reviews/review.module';
     OrdersModule,
     StoreProfileModule,
     ReviewModule,
+    PaymentModule,
+
+    
   ],
   controllers: [AppController],
   providers: [AppService],

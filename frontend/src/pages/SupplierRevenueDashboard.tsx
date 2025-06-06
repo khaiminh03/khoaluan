@@ -26,7 +26,7 @@ export default function SupplierRevenueDashboard() {
     const userInfo = localStorage.getItem('user_info');
     if (userInfo) {
       const parsed = JSON.parse(userInfo);
-      setSupplierId(parsed.sub);
+      setSupplierId(parsed._id);
     }
   }, []);
 

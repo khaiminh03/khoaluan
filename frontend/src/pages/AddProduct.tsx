@@ -54,7 +54,7 @@ const AddProduct = () => {
     setUserRole(userInfo.role);
     setForm((prevForm) => ({
       ...prevForm,
-      supplierId: userInfo.sub,
+      supplierId: userInfo._id,
     }));
 
     const fetchCategories = async () => {
@@ -123,7 +123,7 @@ const AddProduct = () => {
     }
 
     const userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
-    const supplierId = userInfo.sub;
+    const supplierId = userInfo._id;
 
     const formData = new FormData();
     formData.append('name', form.name);

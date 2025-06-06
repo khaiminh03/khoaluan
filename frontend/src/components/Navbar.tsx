@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { Modal, Box, TextField, Button } from "@mui/material";
-import LoginForm from "./LoginForm";
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -20,8 +19,6 @@ const Navbar = () => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [userInfo, setUserInfo] = useState<any>(null);
-
-  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const navigate = useNavigate();
@@ -71,7 +68,7 @@ const Navbar = () => {
       navigate("/");
       window.dispatchEvent(new Event("storage"));
     } else {
-      setShowLoginModal(true);
+      navigate("/login");
     }
   };
 
@@ -217,9 +214,9 @@ const Navbar = () => {
     return;
   }
 
-  const userId = userInfo.sub;
-  console.log("🔎 userInfo:", userInfo);
-  console.log("🔑 userId (from sub):", userId);
+  const userId = userInfo._id;
+  // console.log("🔎 userInfo:", userInfo);
+  // console.log("🔑 userId (from sub):", userId);
 
   if (!userId) {
     alert("Không tìm thấy ID người dùng để cập nhật.");
@@ -254,7 +251,7 @@ const Navbar = () => {
       // Giữ lại `sub` nếu backend không trả về
       const newUserInfo = {
         ...updatedUser,
-        sub: userId, // thêm lại sub để lần sau sử dụng
+        _id: userId, // thêm lại sub để lần sau sử dụng
       };
 
       localStorage.setItem("user_info", JSON.stringify(newUserInfo));
@@ -392,152 +389,173 @@ const Navbar = () => {
           </button>
         </div>
       </nav>
-      {/* Modal đăng nhập */}
-      <Modal open={showLoginModal} onClose={() => setShowLoginModal(false)}>
-        <Box className="bg-white p-6 rounded-md shadow-md w-[90%] sm:w-[420px] mx-auto mt-[10%]">
-          <LoginForm
-            onSuccess={() => {
-              setShowLoginModal(false);
-              window.dispatchEvent(new Event("storage")); // cập nhật UI Navbar
-            }}
-          />
-        </Box>
-      </Modal>
-
       {/* Modal đăng ký nhà cung cấp */}
       <Modal open={showSupplierModal} onClose={() => setShowSupplierModal(false)}>
-        <Box className="bg-white p-6 rounded-md shadow-md w-[90%] sm:w-[420px] mx-auto mt-[10%]">
-          <h2 className="text-lg font-semibold mb-4">Đăng ký nhà cung cấp</h2>
+  <Box className="bg-white rounded-2xl shadow-xl w-[90%] sm:w-[420px] mx-auto mt-[5%] p-6 outline-none ring-0">
+    <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
+      Đăng ký nhà cung cấp
+    </h2>
 
-          <TextField
-            fullWidth
-            label="Tên cửa hàng"
-            value={storeName}
-            onChange={(e) => setStoreName(e.target.value)}
-            className="mb-4"
+    <div className="flex flex-col gap-5">
+      <TextField
+        fullWidth
+        label="Tên cửa hàng"
+        value={storeName}
+        onChange={(e) => setStoreName(e.target.value)}
+      />
+
+      <TextField
+        fullWidth
+        label="Số điện thoại"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+      />
+
+      <TextField
+        fullWidth
+        label="Địa chỉ"
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
+      />
+
+      <div className="flex flex-col">
+        <label className="text-sm font-medium text-gray-700 mb-1">Ảnh đại diện</label>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              setImageFile(file);
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+              };
+              reader.readAsDataURL(file);
+            }
+          }}
+          className="file:mr-4 file:py-2 file:px-4
+            file:rounded-md file:border-0
+            file:text-sm file:font-medium
+            file:bg-blue-50 file:text-blue-700
+            hover:file:bg-blue-100
+            text-sm text-gray-600"
+        />
+      </div>
+
+      {imagePreview && (
+        <div className="flex justify-center">
+          <img
+            src={imagePreview}
+            alt="Ảnh xem trước"
+            className="w-20 h-20 object-cover rounded-full border border-gray-300 shadow-sm"
           />
+        </div>
+      )}
 
-          <TextField
-            fullWidth
-            label="Số điện thoại"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="mb-4"
-          />
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleSubmitRegister}
+        disabled={loading || hasRegistered}
+        fullWidth
+        className="!mt-2 !bg-green-600 hover:!bg-green-700 transition-all"
+      >
+        {loading
+          ? "Đang gửi..."
+          : hasRegistered
+          ? "Đã gửi đăng ký"
+          : "Gửi đăng ký"}
+      </Button>
+    </div>
+  </Box>
+</Modal>
 
-          <TextField
-            fullWidth
-            label="Địa chỉ"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="mb-4"
-          />
-
-          {/* Upload ảnh đại diện */}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                setImageFile(file);
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                  setImagePreview(reader.result as string);
-                };
-                reader.readAsDataURL(file);
-              }
-            }}
-            className="mb-4"
-          />
-
-          {imagePreview && (
-            <img
-              src={imagePreview}
-              alt="Ảnh xem trước"
-              className="w-20 h-20 object-cover rounded-full mb-4"
-            />
-          )}
-
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSubmitRegister}
-            disabled={loading || hasRegistered}
-            fullWidth
-          >
-            {loading
-              ? "Đang gửi..."
-              : hasRegistered
-              ? "Đã gửi đăng ký"
-              : "Gửi đăng ký"}
-          </Button>
-        </Box>
-      </Modal>
 
       {/* Modal cập nhật thông tin người dùng */}
-      <Modal open={showProfileModal} onClose={() => setShowProfileModal(false)}>
-        <Box className="bg-white p-6 rounded-md shadow-md w-[90%] sm:w-[420px] mx-auto mt-[10%]">
-          <h2 className="text-lg font-semibold mb-4">Cập nhật thông tin</h2>
+     <Modal open={showProfileModal} onClose={() => setShowProfileModal(false)}>
+  <Box className="bg-white rounded-2xl shadow-lg w-[90%] sm:w-[420px] mx-auto mt-[5%] p-6 outline-none ring-0">
+    <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">
+      Cập nhật thông tin
+    </h2>
 
-          <TextField
-            fullWidth
-            label="Tên"
-            value={userInfo?.name || ""}
-            onChange={(e) =>
-              setUserInfo((prev: any) => ({ ...prev, name: e.target.value }))
-            }
-            className="mb-4"
+    <div className="flex flex-col gap-5">
+      <TextField
+        fullWidth
+        label="Tên"
+        value={userInfo?.name || ""}
+        onChange={(e) =>
+          setUserInfo((prev: any) => ({ ...prev, name: e.target.value }))
+        }
+      />
+
+      <TextField
+        fullWidth
+        label="Số điện thoại"
+        value={userInfo?.phone || ""}
+        onChange={(e) =>
+          setUserInfo((prev: any) => ({ ...prev, phone: e.target.value }))
+        }
+      />
+
+      <TextField
+        fullWidth
+        label="Địa chỉ"
+        value={userInfo?.address || ""}
+        onChange={(e) =>
+          setUserInfo((prev: any) => ({ ...prev, address: e.target.value }))
+        }
+      />
+
+      <div className="flex flex-col">
+        <label className="text-sm font-medium text-gray-700 mb-1">Ảnh đại diện</label>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            setAvatarFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              setUserInfo((prev: any) => ({ ...prev, avatarUrl: reader.result }));
+            };
+            reader.readAsDataURL(file);
+          }}
+          className="file:mr-4 file:py-2 file:px-4
+            file:rounded-md file:border-0
+            file:text-sm file:font-medium
+            file:bg-blue-50 file:text-blue-700
+            hover:file:bg-blue-100
+            text-sm text-gray-600"
+        />
+      </div>
+
+      {userInfo?.avatarUrl && (
+        <div className="flex justify-center">
+          <img
+            src={userInfo.avatarUrl}
+            alt="Avatar Preview"
+            className="w-20 h-20 rounded-full object-cover border border-gray-300 shadow-sm"
           />
+        </div>
+      )}
 
-          <TextField
-            fullWidth
-            label="Số điện thoại"
-            value={userInfo?.phone || ""}
-            onChange={(e) =>
-              setUserInfo((prev: any) => ({ ...prev, phone: e.target.value }))
-            }
-            className="mb-4"
-          />
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleUpdateProfile}
+        disabled={profileLoading}
+        fullWidth
+        className="!mt-2 !bg-green-600 hover:!bg-green-500 transition-all"
+      >
+        {profileLoading ? "Đang cập nhật..." : "Cập nhật"}
+      </Button>
+    </div>
+  </Box>
+</Modal>
 
-          <TextField
-            fullWidth
-            label="Địa chỉ"
-            value={userInfo?.address || ""}
-            onChange={(e) =>
-              setUserInfo((prev: any) => ({ ...prev, address: e.target.value }))
-            }
-            className="mb-4"
-          />
 
-          {/* Upload ảnh avatar */}
-          <input
-  type="file"
-  accept="image/*"
-  onChange={(e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setAvatarFile(file); // lưu file gốc để gửi lên server
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setUserInfo((prev: any) => ({ ...prev, avatarUrl: reader.result })); // vẫn giữ preview base64
-    };
-    reader.readAsDataURL(file);
-  }}
-  className="mb-4"
-/>
-
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleUpdateProfile}
-            disabled={profileLoading}
-            fullWidth
-          >
-            {profileLoading ? "Đang cập nhật..." : "Cập nhật"}
-          </Button>
-        </Box>
-      </Modal>
     </>
   );
 };

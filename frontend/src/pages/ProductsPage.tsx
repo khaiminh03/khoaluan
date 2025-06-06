@@ -169,7 +169,7 @@ const ProductsPage = () => {
       const userInfo = localStorage.getItem('user_info');
       if (!userInfo) throw new Error('User info not found');
       const parsedUserInfo = JSON.parse(userInfo);
-      const supplierId = parsedUserInfo.sub;
+      const supplierId = parsedUserInfo._id;
       const filteredProducts = data.filter((product: Product) => product.supplierId === supplierId);
       for (let product of filteredProducts) {
         const categoryName = await fetchCategory(product.categoryId);
