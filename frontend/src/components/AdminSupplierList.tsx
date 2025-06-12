@@ -23,9 +23,7 @@ const AdminSupplierList: React.FC = () => {
       const res = await fetch("http://localhost:5000/store-profiles", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) {
-        throw new Error("Không thể lấy danh sách nhà cung cấp");
-      }
+      if (!res.ok) throw new Error("Không thể lấy danh sách nhà cung cấp");
       const data = await res.json();
       setSuppliers(data);
     } catch (error: any) {
@@ -48,9 +46,7 @@ const AdminSupplierList: React.FC = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      if (!res.ok) {
-        throw new Error("Duyệt nhà cung cấp thất bại");
-      }
+      if (!res.ok) throw new Error("Duyệt nhà cung cấp thất bại");
       alert("✅ Duyệt thành công");
       fetchSuppliers();
     } catch (error: any) {
@@ -62,54 +58,61 @@ const AdminSupplierList: React.FC = () => {
     fetchSuppliers();
   }, []);
 
-  if (loading) return <div className="text-center text-gray-500">Đang tải dữ liệu...</div>;
-
-  if (!token)
+  if (!token) {
     return (
-      <div className="text-center text-red-500 font-semibold">
+      <div className="text-center text-red-500 font-semibold mt-10">
         Bạn cần đăng nhập với tài khoản admin để xem trang này.
       </div>
     );
+  }
+
+  if (loading) {
+    return <div className="text-center text-gray-500 mt-10">Đang tải dữ liệu...</div>;
+  }
 
   return (
-    <div className=" bg-white shadow-md rounded-lg">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Danh sách đăng ký nhà cung cấp</h1>
+    <div className="px-6 max-w-screen-xl mx-auto">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6 pb-2">
+        DANH SÁCH ĐĂNG KÝ NHÀ CUNG CẤP
+      </h1>
       {suppliers.length === 0 ? (
-        <p className="text-gray-500">Chưa có nhà cung cấp nào đăng ký.</p>
+        <p className="text-gray-500 text-center py-6">
+          Chưa có nhà cung cấp nào đăng ký.
+        </p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="bg-gray-100 text-gray-700 text-left">
-                <th className="py-3 px-4 border">Tên cửa hàng</th>
-                <th className="py-3 px-4 border">Số điện thoại</th>
-                <th className="py-3 px-4 border">Địa chỉ</th>
-                <th className="py-3 px-4 border">Trạng thái</th>
-                <th className="py-3 px-4 border">Hành động</th>
+        <div className="overflow-x-auto rounded-lg shadow border border-gray-200">
+          <table className="min-w-full bg-white text-sm text-left text-gray-700">
+            <thead className="bg-gray-100 text-xs font-semibold text-gray-600">
+              <tr>
+                <th className="px-5 py-3">Tên cửa hàng</th>
+                <th className="px-5 py-3">Số điện thoại</th>
+                <th className="px-5 py-3">Địa chỉ</th>
+                <th className="px-5 py-3">Trạng thái</th>
+                <th className="px-5 py-3 text-center">Chức năng</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-200">
               {suppliers.map((s) => (
-                <tr key={s._id} className="hover:bg-gray-50 border-b">
-                  <td className="py-2 px-4 border">{s.storeName}</td>
-                  <td className="py-2 px-4 border">{s.phone}</td>
-                  <td className="py-2 px-4 border">{s.address}</td>
-                  <td className="py-2 px-4 border">
+                <tr key={s._id} className="hover:bg-gray-50 transition">
+                  <td className="px-5 py-4">{s.storeName}</td>
+                  <td className="px-5 py-4">{s.phone}</td>
+                  <td className="px-5 py-4">{s.address}</td>
+                  <td className="px-5 py-4">
                     <span
                       className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
                         s.isApproved
-                          ? "bg-green-100 text-green-600"
-                          : "bg-yellow-100 text-yellow-600"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-yellow-100 text-yellow-700"
                       }`}
                     >
                       {s.isApproved ? "Đã duyệt" : "Chờ duyệt"}
                     </span>
                   </td>
-                  <td className="py-2 px-4 border">
+                  <td className="px-5 py-4 text-center">
                     {!s.isApproved && (
                       <button
                         onClick={() => approveSupplier(s._id)}
-                        className="bg-indigo-500 text-white px-4 py-1 rounded hover:bg-indigo-600 transition"
+                        className="bg-red-500 text-white px-4 py-1.5 rounded-md hover:bg-red-600 transition text-sm font-semibold"
                       >
                         Duyệt
                       </button>

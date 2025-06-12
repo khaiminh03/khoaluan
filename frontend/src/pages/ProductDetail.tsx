@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import axios from 'axios';
 
 interface Supplier {
@@ -96,17 +97,17 @@ const ProductDetail = () => {
     if (existingProductIndex !== -1) {
       if (currentCart[existingProductIndex].quantity! < product.stock) {
         currentCart[existingProductIndex].quantity! += 1;
-        alert('Đã tăng số lượng sản phẩm trong giỏ hàng.');
+        toast.success(`Đã thêm "${product.name}" vào giỏ hàng!`);
       } else {
-        alert('Số lượng sản phẩm đã đạt giới hạn tồn kho.');
+        toast.warning('Số lượng sản phẩm đã đạt giới hạn tồn kho.');
         return;
       }
     } else {
       if (product.stock > 0) {
         currentCart.push({ ...product, quantity: 1 });
-        alert('Đã thêm sản phẩm vào giỏ hàng.');
+        toast.success(`Đã thêm "${product.name}" vào giỏ hàng!`);
       } else {
-        alert('Sản phẩm tạm thời hết hàng.');
+        toast.error('Sản phẩm tạm thời hết hàng.');
         return;
       }
     }
@@ -119,7 +120,7 @@ const ProductDetail = () => {
   if (!product) return <p>Loading...</p>;
 
   return (
-    <div className="max-w-6xl w-full px-6 mx-auto">
+    <div className="max-w-6xl w-full px-6 mx-auto mt-16">
       <p>
         <span>Trang chủ</span> / <span>Sản phẩm</span> / <span className="text-green-500">{product.name}</span>
       </p>
@@ -158,10 +159,10 @@ const ProductDetail = () => {
           <p className="text-gray-500/70">{product.description}</p>
 
           <div className="mt-4 text-gray-500 text-sm space-y-1">
-            <p><strong>Kho còn:</strong> {product.stock}</p>
-            <p><strong>Đóng gói:</strong> {product.unitDisplay}</p>
-            <p><strong>Xuất xứ:</strong> {product.origin}</p>
-            <p><strong>Trạng thái:</strong> {product.status}</p>
+            <p><strong>Số lượng:</strong> {product.stock}</p>
+            <p><strong>Khối lượng:</strong> {product.unitDisplay}</p>
+            <p><strong>Nơi sản xuất:</strong> {product.origin}</p>
+            {/* <p><strong>Trạng thái:</strong> {product.status}</p> */}
           </div>
 
           <div className="flex items-center mt-10 gap-4 text-base">
@@ -186,7 +187,8 @@ const ProductDetail = () => {
               )}
               <div>
                 <h3 className="text-lg font-bold text-green-700">{product.supplierId.name}</h3>
-                <p className="text-sm text-gray-500">{product.supplierId.address}</p>
+                <p className="text-sm text-gray-500"><strong>Địa chỉ:</strong> {product.supplierId.address}</p>
+                <p className="text-sm text-gray-500"><strong>Số điện thoại: +</strong>{product.supplierId.phone}</p>
               </div>
             </div>
           </div>

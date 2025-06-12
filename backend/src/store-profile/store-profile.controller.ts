@@ -18,11 +18,9 @@ interface JwtRequest extends Request {
 export class StoreProfileController {
   constructor(private readonly storeProfileService: StoreProfileService) {}
 
-  // Lấy hồ sơ nhà cung cấp của user hiện tại
-  @UseGuards(JwtAuthGuard)
   @Get('my-profile')
   async getMyProfile(@Req() req: JwtRequest) {
-    const profile = await this.storeProfileService.findByUserId(req.user.userId);
+    const profile = await this.storeProfileService.findByUserId(req.user?.userId ?? '');
     if (!profile) {
       return { message: 'Chưa đăng ký nhà cung cấp', isComplete: false, isApproved: false };
     }
@@ -39,9 +37,8 @@ export class StoreProfileController {
     };
   }
 
-  // Đăng ký nhà cung cấp + upload ảnh đại diện
+  // ❌ BỎ JwtAuthGuard
   @Post()
-  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('image', {
     storage: diskStorage({
       destination: (req, file, cb) => {
@@ -63,27 +60,24 @@ export class StoreProfileController {
     @UploadedFile() image: Express.Multer.File,
   ) {
     const imageUrl = image ? `/store-profile/${image.filename}` : '';
-    return this.storeProfileService.createOrUpdate(req.user.userId, {
+    return this.storeProfileService.createOrUpdate(req.user?.userId ?? '', {
       ...dto,
       imageUrl,
     });
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  // ✅ MỞ PUBLIC HOÀN TOÀN
   @Get()
   async findAll() {
     return this.storeProfileService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  // ✅ MỞ PUBLIC luôn cả approve (nếu bạn muốn)
   @Patch(':id/approve')
   async approve(@Param('id') id: string) {
     return this.storeProfileService.approveProfile(id);
   }
 
-  // Lấy hồ sơ nhà cung cấp theo userId (supplierId)
   @Get('by-user/:userId')
   async findByUserId(@Param('userId') userId: string) {
     const profile = await this.storeProfileService.findByUserId(userId);
@@ -93,7 +87,6 @@ export class StoreProfileController {
     return profile;
   }
 
-  // Nếu bạn muốn lấy hồ sơ nhà cung cấp theo id (profile id)
   @Get(':id')
   async findById(@Param('id') id: string) {
     const profile = await this.storeProfileService.findById(id);

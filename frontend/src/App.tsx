@@ -2,7 +2,6 @@ import React from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
 import Home from "./pages/Home";
 import CategoryPage from './pages/CategoryPage';
 import AddProduct from "./pages/AddProduct";
@@ -29,12 +28,14 @@ import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPasswordForm from "./pages/ForgotPasswordForm";
 import ResetPasswordForm from "./pages/ResetPasswordForm";
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import AdminPendingProducts from "./pages/AdminPendingProducts";
+import AdminReviewList from "./pages/AdminReviewList";
+// import AdminCharts from "./pages/AdminCharts"
 const App: React.FC = () => {
   const location = useLocation();
 
   const publicPaths = [
-    "/", "/add", "/sp", "/dangky", "/login", "/product", "/cart",
+    "/", "/add", "/sp", "/dangky", "/product","/login", "/cart",
     "/myorder", "/products", "/search", "/verify-email",
     "/forgot-password", "/reset-password"
   ];
@@ -54,13 +55,14 @@ const App: React.FC = () => {
           <Route path="/" element={<Home />} />
           <Route path="/add" element={<CategoryPage />} />
           <Route path="/sp" element={<AddProduct />} />
-          <Route path="/dangky" element={<RegisterForm />} />
+          <Route path="/sign" element={<RegisterForm />} />
           <Route path="/login" element={<LoginForm />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/myorder" element={<MyOrders />} />
           <Route path="/products/category/:categoryId" element={<ProductsByCategory />} />
           <Route path="/products" element={<AllProducts />} />
+          
           <Route path="/search" element={<SearchPage />} />
           <Route path="/editstatus" element={<SupplierOrderManagement />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
@@ -98,6 +100,9 @@ const App: React.FC = () => {
             <Route path="category" element={<CategoryPage />} />
             <Route path="allproduct" element={<AllProductPage />} />
             <Route path="adminorder" element={<AdminOrders />} />
+            <Route path="adminstatus" element={<AdminPendingProducts />} />
+            <Route path="adminreviews" element={<AdminReviewList />} />
+            {/* <Route path="adminrevenue" element={<AdminCharts />} /> */}
           </Route>
         </Routes>
       </div>

@@ -50,12 +50,14 @@ const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
     setProducts(updatedProducts);
     localStorage.setItem("cart", JSON.stringify(updatedProducts));
     window.dispatchEvent(new Event("cartUpdated"));
+    toast.success(`Đã thêm xóa sản phẩm!`);
   };
 
   const updateAddress = async (newAddress: string) => {
     if (newAddress.trim() === "") {
-      alert("Địa chỉ không được để trống");
+      toast.success(`Địa chỉ không được để trống`);
       return;
+      
     }
 
     try {
@@ -63,7 +65,7 @@ const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
       const userId = userInfo._id;
 
       if (!userId) {
-        alert("Không tìm thấy thông tin người dùng");
+        toast.success(`Không thấy thông tin địa chỉ`);
         return;
       }
 
@@ -74,7 +76,7 @@ const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
       });
 
       if (!response.ok) {
-        alert("Cập nhật địa chỉ thất bại");
+        toast.success(`Cập nhật địa chỉ thất bại`);
         return;
       }
 
@@ -82,19 +84,19 @@ const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
       localStorage.setItem("user_info", JSON.stringify(userInfo));
       setAddress(newAddress);
       setShowAddress(false);
+      toast.success("Cập nhật địa chỉ thành công!");
     } catch (error) {
-      console.error("Lỗi cập nhật địa chỉ:", error);
-      alert("Cập nhật địa chỉ thất bại");
+      toast.success(`Cập nhật địa chỉ thất bại`);
     }
   };
 
   const placeOrder = async () => {
   if (products.length === 0) {
-    alert("Giỏ hàng trống, vui lòng chọn sản phẩm trước khi đặt hàng.");
+    toast.success("Giỏ hàng trống, vui lòng chọn sản phẩm trước khi đặt hàng.");
     return;
   }
   if (!address || address.trim() === "") {
-    alert("Vui lòng nhập địa chỉ giao hàng hợp lệ.");
+    toast.success("Vui lòng nhập địa chỉ giao hàng hợp lệ!");
     return;
   }
 
@@ -102,10 +104,14 @@ const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   const userId = userInfo._id;
 
   if (!userId) {
-    alert("Thông tin người dùng chưa đầy đủ hoặc bị thiếu.");
+    toast.success("Thông tin người dùng chưa đầy đủ hoặc bị thiếu."); 
     return;
   }
 
+   if (!userInfo.phone || userInfo.phone.trim() === "") {
+    toast.warn("Vui lòng cập nhật số điện thoại trước khi đặt hàng!");
+    return;
+  }
   const orderData = {
     customerId: userId,
     items: products.map((product) => ({
@@ -117,7 +123,6 @@ const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
     totalAmount: totalWithTax,
     shippingAddress: address,
     paymentMethod: paymentMethod === "Online" ? "Thanh toán trực tuyến" : "Thanh toán khi nhận hàng",
-    status: paymentMethod === "Online" ? "Chờ thanh toán" : "Chờ xác nhận",
   };
 
   try {
@@ -158,7 +163,7 @@ const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
           clearInterval(interval);
           setShowSepayModal(false);
           localStorage.removeItem("cart");
-          toast.success("✅ Thanh toán thành công!");
+          toast.success("Thanh toán thành công!");
           navigate("/myorder");
         }
       } catch (err) {
@@ -175,7 +180,7 @@ const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
         </h1>
         <div className="grid grid-cols-[2fr_1fr_1fr] text-gray-500 text-base font-medium pb-3">
           <p className="text-left">Thông tin chi tiết sản phẩm</p>
-          <p className="text-center">Tổng tiền</p>
+          <p className="text-center">Thành tiền</p>
           <p className="text-center">Hủy</p>
         </div>
 
@@ -216,7 +221,7 @@ const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
               </div>
             </div>
 
-            <p className="text-center">{(product.price * product.quantity).toLocaleString()}₫</p>
+            <p className="text-center">{(product.price * product.quantity).toLocaleString('vi-VN')}₫</p>
             <button className="cursor-pointer mx-auto" onClick={() => removeProduct(index)}>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path
@@ -265,7 +270,7 @@ const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
                 />
                 <button
                   onClick={() => updateAddress(address)}
-                  className="w-full text-indigo-500 text-center p-2 hover:bg-indigo-500/10"
+                  className="w-full text-green-500 text-center p-2 hover:bg-green-500/10"
                 >
                   Lưu
                 </button>
@@ -289,7 +294,7 @@ const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
         <div className="text-gray-500 mt-4 space-y-2">
           <p className="flex justify-between">
             <span>Giá</span>
-            <span>{totalPrice.toLocaleString()}₫</span>
+            <span>{totalPrice.toLocaleString('vi-VN')}₫</span>
           </p>
           <p className="flex justify-between">
             <span>Phí vận chuyển</span>
@@ -297,7 +302,7 @@ const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
           </p>
           <p className="flex justify-between text-lg font-medium mt-3">
             <span>Tổng tiền:</span>
-            <span>{totalWithTax.toLocaleString()}₫</span>
+            <span>{totalWithTax.toLocaleString('vi-VN')}₫</span>
           </p>
         </div>
 

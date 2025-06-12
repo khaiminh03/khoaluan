@@ -57,26 +57,44 @@ export class CategoriesController {
   }
 
   @Put(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateData: Partial<CreateCategoryDto>,
-  ): Promise<Category> {
-    return this.categoriesService.update(id, updateData);
-  }
+@UseInterceptors(
+  FileInterceptor('image', {
+    storage: diskStorage({
+      destination: './uploads/categories',
+      filename: (req, file, cb) => {
+        const uniqueName = `${uuidv4()}${extname(file.originalname)}`;
+        cb(null, uniqueName);
+      },
+    }),
+  }),
+)
+async update(
+  @Param('id') id: string,
+  @UploadedFile() file: Express.Multer.File,
+  @Body() updateData: any, // không dùng DTO ở đây vì FormData
+): Promise<Category> {
+  const updatePayload = {
+    ...updateData,
+    ...(file ? { image: file.filename } : {}),
+  };
+
+  return this.categoriesService.update(id, updatePayload);
+}
+
 
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<void> {
     return this.categoriesService.remove(id);
   }
-   @Get(':id')
-   @Get(':id')
-  async getCategoryById(@Param('id') id: string): Promise<Category> {
-    const category = await this.categoriesService.findCategoryById(id);  // Đảm bảo sử dụng đúng tên service
-    if (!category) {
-      throw new Error('Category not found');
-    }
-    return category;
-  }
+  //  @Get(':id')
+  //  @Get(':id')
+  // async getCategoryById(@Param('id') id: string): Promise<Category> {
+  //   const category = await this.categoriesService.findCategoryById(id);  // Đảm bảo sử dụng đúng tên service
+  //   if (!category) {
+  //     throw new Error('Category not found');
+  //   }
+  //   return category;
+  // }
  
   
 }

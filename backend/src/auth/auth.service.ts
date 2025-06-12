@@ -72,7 +72,7 @@ export class AuthService {
     const token = this.jwtService.sign(payload, { expiresIn: '1h' });
 
     return {
-      message: 'Login successful',
+      message: 'Đăng nhập thành công',
       access_token: token,
       user: {
         id: user._id,
@@ -94,7 +94,9 @@ export class AuthService {
     const googleUserInfo = await this.getGoogleUserInfo(accessToken);
 
     let user = await this.userService.findByEmail(googleUserInfo.email);
-
+    if (user && user.isBlocked) {
+      throw new UnauthorizedException('Tài khoản của bạn đã bị khóa');
+    }
     if (!user) {
       const fullName = [googleUserInfo.given_name, googleUserInfo.family_name].filter(Boolean).join(' ').trim();
 

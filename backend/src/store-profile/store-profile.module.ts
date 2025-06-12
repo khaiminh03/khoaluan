@@ -10,7 +10,7 @@ import { UserModule } from '../users/user.module';  // Đường dẫn chính x�
   imports: [
     MongooseModule.forFeature([
       { name: StoreProfile.name, schema: StoreProfileSchema },
-      { name: User.name, schema: UserSchema },  // Thêm User schema để inject được userModel
+      { name: User.name, schema: UserSchema },  
     ]),
     UserModule,
   ],

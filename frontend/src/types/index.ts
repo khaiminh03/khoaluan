@@ -14,5 +14,6 @@ export interface UserType {
     isSeller: boolean;
     setIsSeller: (isSeller: boolean) => void;
     navigate: (path: string) => void;
+    loading: boolean;
   }
   

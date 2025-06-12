@@ -1,5 +1,5 @@
 import { ReactNode, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { AppContext } from "./AppContext";
 import { AppContextType, UserType } from "../types";
 import jwtDecode from "jwt-decode";
@@ -19,9 +19,12 @@ interface DecodedToken {
 
 export const AppContextProvider = ({ children }: AppContextProviderProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<UserType | null>(null);
   const [isSeller, setIsSeller] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
 
+  // ✅ Khôi phục user từ token
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
@@ -44,7 +47,7 @@ export const AppContextProvider = ({ children }: AppContextProviderProps) => {
         localStorage.setItem("user_info", JSON.stringify(userInfo));
         setUser(userInfo);
       } catch (err) {
-        console.error("Không thể giải mã token:", err);
+        console.error("❌ Không thể giải mã token:", err);
       }
     } else {
       const storedToken = localStorage.getItem("accessToken");
@@ -54,13 +57,15 @@ export const AppContextProvider = ({ children }: AppContextProviderProps) => {
           const parsed = JSON.parse(storedUser) as UserType;
           setUser(parsed);
         } catch (err) {
-          console.error("Lỗi khi parse user_info từ localStorage:", err);
+          console.error("❌ Lỗi khi parse user_info:", err);
         }
       }
     }
+
+    setLoading(false);
   }, []);
 
-  // (Tuỳ chọn) Đồng bộ nếu context bị mất
+  // ✅ Đồng bộ user khi event "authChanged" được gửi
   useEffect(() => {
     const syncUser = () => {
       const userStr = localStorage.getItem("user_info");
@@ -72,8 +77,35 @@ export const AppContextProvider = ({ children }: AppContextProviderProps) => {
     return () => window.removeEventListener("authChanged", syncUser);
   }, []);
 
+  // ✅ Tự điều hướng sau khi user được xác định
+  useEffect(() => {
+    if (user) {
+      if (user.role === "admin" && !location.pathname.startsWith("/admin")) {
+        navigate("/admin");
+      } else if (user.role === "supplier" && !location.pathname.startsWith("/seller")) {
+        navigate("/seller");
+      } else if (user.role === "customer" && location.pathname === "/login") {
+        navigate("/");
+      }
+    }
+  }, [user, navigate, location.pathname]);
 
-  const value: AppContextType = { navigate, user, setUser, isSeller, setIsSeller };
+  const value: AppContextType = {
+    navigate,
+    user,
+    setUser,
+    isSeller,
+    setIsSeller,
+    loading,
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-lg">
+        🔄 Đang tải thông tin người dùng...
+      </div>
+    );
+  }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

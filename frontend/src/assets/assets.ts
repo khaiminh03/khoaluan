@@ -70,6 +70,7 @@ import quinoa_image from "./quinoa_image.png";
 import brown_rice_image from "./brown_rice_image.png";
 import barley_image from "./barley_image.png";
 import bootom_banner from "./bottom_banner.png";
+import logoe from "./logoe.svg";
 export const assets = {
   logo,
   search_icon,
@@ -99,6 +100,7 @@ export const assets = {
   add_address_iamge,
   box_icon,
   bootom_banner,
+  logoe,
 };
 
 export const categories = [

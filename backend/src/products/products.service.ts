@@ -32,11 +32,18 @@ export class ProductsService {
   }
 
   async findAll(): Promise<Product[]> {
-    return this.productModel
-      .find({ isActive: true, status: 'pending' })
-      .sort({ createdAt: -1 })
-      .exec();
-  }
+  return this.productModel
+    .find({ isActive: true, status: 'approved' }) // ✅ đã duyệt mới cho khách xem
+    .sort({ createdAt: -1 })
+    .exec();
+}
+  async findWithFilter(filter: any): Promise<Product[]> {
+  return this.productModel
+    .find(filter)
+    .sort({ createdAt: -1 })
+    .exec();
+}
+
 
   async findOne(id: string): Promise<any> {
     const product = await this.productModel.findById(id)
@@ -58,7 +65,8 @@ export class ProductsService {
     if (storeProfile) {
       supplier.storeName = storeProfile.storeName;
       supplier.imageUrl = storeProfile.imageUrl;
-      supplier.address = storeProfile.address; // optional override
+      supplier.address = storeProfile.address;
+      supplier.phone = storeProfile.phone;
     }
 
     return product;
@@ -84,7 +92,7 @@ export class ProductsService {
   return this.productModel.find({
     name: { $regex: keyword, $options: 'i' },
     isActive: true,
-    status: 'pending',
+    status: 'approved',
   }).exec();
 }
 
@@ -104,4 +112,8 @@ export class ProductsService {
     const result = await this.productModel.deleteOne({ _id: id }).exec();
     return { deleted: result.deletedCount > 0 };
   }
+
+//   async findBySlug(slug: string): Promise<Product | null> {
+//   return this.productModel.findOne({ slug }).populate('supplierId');
+// }
 }

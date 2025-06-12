@@ -4,7 +4,7 @@ import MainBanner from "../components/MainBanner";
 import Categoris from "../components/Categoris";
 import BestSeller from "../components/BestSeller";
 import BottomBanner from "../components/BottomBanner";
-import Letter from "../components/Letter";
+
 
 const Home = () => {
   useEffect(() => {
@@ -31,7 +31,6 @@ const Home = () => {
       <Categoris />
       <BestSeller />
       <BottomBanner />
-      <Letter />
     </div>
   );
 };

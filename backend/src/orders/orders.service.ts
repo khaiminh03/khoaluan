@@ -34,6 +34,7 @@ export class OrdersService {
       const orderToSave = {
         ...createOrderDto,
         customerId: new Types.ObjectId(createOrderDto.customerId),
+         status: 'Chưa thanh toán',
         items: createOrderDto.items.map(item => ({
           ...item,
           productId: new Types.ObjectId(item.productId),
@@ -48,23 +49,6 @@ export class OrdersService {
     }
   }
 
-  // async getOrdersWithProductDetails() {
-  //   try {
-  //     return await this.orderModel
-  //       .find()
-  //       .populate({
-  //         path: 'items.productId',
-  //         select: 'name images categoryId',
-  //         populate: {
-  //           path: 'categoryId',
-  //           select: 'name',
-  //         },
-  //       })
-  //       .exec();
-  //   } catch (error) {
-  //     throw new Error(`Failed to get orders: ${error.message}`);
-  //   }
-  // }
 async getOrdersWithProductDetails() {
   return this.orderModel
     .find()
@@ -117,43 +101,39 @@ async getOrdersWithProductDetails() {
 }
 
    async updateOrderStatus(orderId: string, status: string): Promise<Order> {
-    const allowed = ['Đã đặt hàng', 'Đã xác nhận', 'Đang giao hàng', 'Hoàn thành'];
-    if (!allowed.includes(status)) {
-      throw new BadRequestException('Trạng thái không hợp lệ');
-    }
-
-    const order = await this.orderModel.findById(orderId);
-    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
-
-    order.status = status;
-    await order.save();
-
-    return order;
+  const allowed = ['Chưa thanh toán', 'Đã thanh toán']; // ✅ CHỈ trạng thái thanh toán
+  if (!allowed.includes(status)) {
+    throw new BadRequestException('Trạng thái thanh toán không hợp lệ');
   }
-//   async markOrderStatus(orderId: string, status: string, transactionId?: string) {
-//   if (!orderId) {
-//     throw new BadRequestException('Thiếu ID đơn hàng');
-//   }
 
-//   const updateData: Record<string, any> = { status };
+  const order = await this.orderModel.findById(orderId);
+  if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
 
-//   if (transactionId) {
-//     updateData.transactionId = transactionId;
-//   }
+  order.status = status;
+  await order.save();
 
-//   const order = await this.orderModel.findByIdAndUpdate(
-//     orderId,
-//     { $set: updateData },
-//     { new: true },
-//   );
+  return order;
+}
+  async updateShippingStatus(orderId: string, shippingStatus: string): Promise<Order> {
+  const allowed = ['Chờ xác nhận', 'Đã xác nhận', 'Đang giao hàng','Giao thất bại', 'Hoàn thành'];
+  if (!allowed.includes(shippingStatus)) {
+    throw new BadRequestException('Trạng thái vận chuyển không hợp lệ');
+  }
 
-//   if (!order) {
-//     throw new NotFoundException(`Không tìm thấy đơn hàng với ID ${orderId}`);
-//   }
+  const order = await this.orderModel.findById(orderId);
+  if (!order) throw new NotFoundException('Không tìm thấy đơn hàng');
 
-//   return order;
-// }
+  order.shippingStatus = shippingStatus;
 
+
+  if (shippingStatus === 'Hoàn thành') {
+    order.status = 'Đã thanh toán';
+    order.isPaid = true;
+  }
+
+  await order.save();
+  return order;
+}
    // danh thu 
    async calculateRevenueBySupplier(
     supplierId: string,
@@ -162,7 +142,7 @@ async getOrdersWithProductDetails() {
   ) {
     const match: any = {
       'items.supplierId': new mongoose.Types.ObjectId(supplierId),
-      status: 'Hoàn thành',
+      shippingStatus: 'Hoàn thành',
     };
 
     if (from && to) {
@@ -214,4 +194,199 @@ async findById(orderId: string) {
   return this.orderModel.findById(orderId).exec();
 }
 
+
+///
+async getDailyRevenue(supplierId: string, from?: string, to?: string) {
+  const match: any = {
+    'items.supplierId': new Types.ObjectId(supplierId),
+    shippingStatus: 'Hoàn thành',
+  };
+  if (from && to) {
+    match.createdAt = { $gte: new Date(from), $lte: new Date(to) };
+  }
+
+  return this.orderModel.aggregate([
+    { $unwind: '$items' },
+    { $match: match },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+        revenue: { $sum: { $multiply: ['$items.quantity', '$items.price'] } },
+      },
+    },
+    {
+      $project: {
+        date: '$_id',
+        revenue: 1,
+        _id: 0,
+      },
+    },
+    { $sort: { date: 1 } },
+  ]);
 }
+
+  async getTopProducts(supplierId: string, from?: string, to?: string) {
+  const match: any = {
+    'items.supplierId': new Types.ObjectId(supplierId),
+    shippingStatus: 'Hoàn thành',
+  };
+  if (from && to) {
+    match.createdAt = { $gte: new Date(from), $lte: new Date(to) };
+  }
+
+  return this.orderModel.aggregate([
+    { $unwind: '$items' },
+    { $match: match },
+    {
+      $group: {
+        _id: '$items.productId',
+        sold: { $sum: '$items.quantity' },
+      },
+    },
+    {
+      $lookup: {
+        from: 'products',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'product',
+      },
+    },
+    { $unwind: '$product' },
+    {
+      $project: {
+        name: '$product.name',
+        sold: 1,
+        _id: 0,
+      },
+    },
+    { $sort: { sold: -1 } },
+    { $limit: 5 },
+  ]);
+}
+  async getOrderStatusSummary(supplierId: string, from?: string, to?: string) {
+  const match: any = {
+    'items.supplierId': new Types.ObjectId(supplierId),
+  };
+  if (from && to) {
+    match.createdAt = { $gte: new Date(from), $lte: new Date(to) };
+  }
+
+  return this.orderModel.aggregate([
+    { $unwind: '$items' },
+    { $match: match },
+    {
+      $group: {
+        _id: '$shippingStatus',
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        status: '$_id',
+        count: 1,
+        _id: 0,
+      },
+    },
+  ]);
+}
+// doanh thu admin
+// Tổng doanh thu theo ngày, tháng, năm
+async getRevenueSummaryByPeriod(unit: 'day' | 'month' | 'year') {
+  const formatMap = {
+    day: '%Y-%m-%d',
+    month: '%Y-%m',
+    year: '%Y',
+  };
+  const format = formatMap[unit];
+
+  return this.orderModel.aggregate([
+    { $match: { shippingStatus: 'Hoàn thành' } },
+    { $unwind: '$items' },
+    {
+      $group: {
+        _id: { $dateToString: { format, date: '$createdAt' } },
+        revenue: { $sum: { $multiply: ['$items.quantity', '$items.price'] } },
+      },
+    },
+    { $project: { date: '$_id', revenue: 1, _id: 0 } },
+    { $sort: { date: 1 } },
+  ]);
+}
+//Doanh thu theo nhà cung cấp
+async getRevenueGroupedBySuppliers() {
+  return this.orderModel.aggregate([
+    { $match: { shippingStatus: 'Hoàn thành' } },
+    { $unwind: '$items' },
+    {
+      $group: {
+        _id: '$items.supplierId',
+        revenue: { $sum: { $multiply: ['$items.quantity', '$items.price'] } },
+        productsSold: { $sum: '$items.quantity' },
+      },
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'supplier',
+      },
+    },
+    { $unwind: '$supplier' },
+    {
+      $project: {
+        supplierId: '$_id',
+        revenue: 1,
+        productsSold: 1,
+        name: '$supplier.name',
+        email: '$supplier.email',
+      },
+    },
+  ]);
+}
+//Tổng số đơn hàng và đơn hàng đã hoàn thành
+async getOrderCountSummary() {
+  const [total, completed] = await Promise.all([
+    this.orderModel.countDocuments(),
+    this.orderModel.countDocuments({ shippingStatus: 'Hoàn thành' }),
+  ]);
+
+  return {
+    totalOrders: total,
+    completedOrders: completed,
+  };
+}
+// Tổng số sản phẩm đã được đăng bán
+async getTotalApprovedProducts() {
+  return this.productModel.countDocuments({ isActive: true, status: 'approved' });
+}
+// Số lượng hàng tồn kho theo loại nông sản
+async getStockByCategory() {
+  return this.productModel.aggregate([
+    {
+      $group: {
+        _id: '$categoryId',
+        totalStock: { $sum: '$stock' },
+      },
+    },
+    {
+      $lookup: {
+        from: 'categories',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'category',
+      },
+    },
+    { $unwind: '$category' },
+    {
+      $project: {
+        categoryName: '$category.name',
+        totalStock: 1,
+        _id: 0,
+      },
+    },
+  ]);
+}
+
+}
+

@@ -176,6 +176,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
 
+           <div className="text-center mb-4 mt-2">
+            <p>Bạn chưa có tài khoản ?<a href="/sign" className="text-sm text-green-600 ">
+              Bấm vào đây
+            </a></p>
+          </div>
+
           <button
             type="button"
             onClick={handleGoogleLogin}

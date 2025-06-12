@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { Modal, Box, TextField, Button } from "@mui/material";
+import { toast } from "react-toastify";
 const Navbar = () => {
+  
   const [open, setOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -57,6 +59,9 @@ const Navbar = () => {
       window.removeEventListener("storage", updateCartCount);
     };
   }, []);
+    const isValidPhoneNumber = (phone: string) => {
+    return /^\d{10}$/.test(phone);
+  };
   // Hàm thay đổi: mở modal login thay vì navigate đến /login
   const handleAuthClick = () => {
     if (isLoggedIn) {
@@ -68,7 +73,7 @@ const Navbar = () => {
       navigate("/");
       window.dispatchEvent(new Event("storage"));
     } else {
-      navigate("/login");
+      window.location.href = "/login";
     }
   };
 
@@ -99,14 +104,14 @@ const Navbar = () => {
         const data = await res.json();
 
         if (data.isApproved) {
-          alert("Bạn đã là nhà cung cấp được duyệt.");
+          toast.success("Bạn đã là nhà cung cấp được duyệt."); 
           setHasRegistered(true);
           setShowSupplierModal(false);
           return;
         }
 
         if (data.isComplete) {
-          alert("Bạn đã đăng ký. Vui lòng chờ admin duyệt.");
+          toast.success("Bạn đã đăng ký. Vui lòng chờ admin duyệt");
           setHasRegistered(true);
           setShowSupplierModal(false);
           return;
@@ -124,102 +129,106 @@ const Navbar = () => {
         setAddress("");
         setShowSupplierModal(true);
       } else {
-        alert("Lỗi khi kiểm tra trạng thái nhà cung cấp.");
+        toast.error("Lỗi khi kiểm tra trạng thái nhà cung cấp.");
         setShowSupplierModal(false);
       }
     } catch {
-      alert("Lỗi khi lấy thông tin nhà cung cấp.");
+      toast.error("Lỗi khi lấy thông tin nhà cung cấp.");
       setShowSupplierModal(false);
     }
   };
 
   // Gửi đăng ký nhà cung cấp
-  const handleSubmitRegister = async () => {
-    if (loading) return;
+const handleSubmitRegister = async () => {
+  if (loading) return;
 
-    if (hasRegistered) {
-      alert("Bạn đã gửi đăng ký rồi, không thể gửi lại.");
-      return;
+  if (hasRegistered) {
+    toast.success("Bạn đã đăng ký rồi, không thể gửi lại.");
+    return;
+  }
+
+  if (!storeName.trim() || !phone.trim() || !address.trim()) {
+    toast.warn("Vui lòng nhập đầy đủ thông tin.");
+    return;
+  }
+
+  // ✅ Kiểm tra định dạng số điện thoại
+  if (!isValidPhoneNumber(phone.trim())) {
+    toast.warn("Số điện thoại phải có đúng 10 chữ số.");
+    return;
+  }
+
+  const token = localStorage.getItem("accessToken");
+  if (!token) {
+    navigate("/login");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const formData = new FormData();
+    formData.append("storeName", storeName.trim());
+    formData.append("phone", phone.trim());
+    formData.append("address", address.trim());
+    if (imageFile) {
+      formData.append("image", imageFile);
     }
 
-    if (!storeName.trim() || !phone.trim() || !address.trim()) {
-      alert("Vui lòng nhập đầy đủ thông tin.");
-      return;
-    }
+    const response = await fetch("http://localhost:5000/store-profiles", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
 
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append("storeName", storeName.trim());
-      formData.append("phone", phone.trim());
-      formData.append("address", address.trim());
-      if (imageFile) {
-        formData.append("image", imageFile);
-      }
-
-      const response = await fetch("http://localhost:5000/store-profiles", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (response.ok) {
-        alert("Đăng ký thành công! Vui lòng chờ admin duyệt.");
-        setShowSupplierModal(false);
-        setStoreName("");
-        setPhone("");
-        setAddress("");
-        setImageFile(null);
-        setImagePreview(null);
+    if (response.ok) {
+      toast.success("Đăng ký thành công! Vui lòng chờ admin duyệt.");
+      setShowSupplierModal(false);
+      setStoreName("");
+      setPhone("");
+      setAddress("");
+      setImageFile(null);
+      setImagePreview(null);
+      setHasRegistered(true);
+    } else {
+      const errorData = await response.json();
+      if (
+        errorData.message &&
+        errorData.message.toLowerCase().includes("đăng ký nhà cung cấp rồi")
+      ) {
+        toast.success("Bạn đã gửi đăng ký rồi, vui lòng chờ admin duyệt.");
         setHasRegistered(true);
+        setShowSupplierModal(false);
       } else {
-        const errorData = await response.json();
-        if (
-          errorData.message &&
-          errorData.message.toLowerCase().includes("đăng ký nhà cung cấp rồi")
-        ) {
-          alert("Bạn đã gửi đăng ký rồi, vui lòng chờ admin duyệt.");
-          setHasRegistered(true);
-          setShowSupplierModal(false);
-        } else {
-          alert("Lỗi: " + (errorData.message || response.statusText));
-        }
+        toast.error("Lỗi: " + (errorData.message || response.statusText));
       }
-    } catch {
-      alert("Lỗi hệ thống khi gửi đăng ký!");
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch {
+    toast.error("Lỗi hệ thống khi gửi đăng ký!");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // Cập nhật thông tin cá nhân
  const handleUpdateProfile = async () => {
   const token = localStorage.getItem("accessToken");
   if (!token) {
-    alert("Bạn chưa đăng nhập");
+    toast.error("Bạn chưa đăng nhập");
     navigate("/login");
     return;
   }
 
   if (!userInfo) {
-    alert("Không có thông tin người dùng trong localStorage");
+    toast.warn("Không có thông tin người dùng trong localStorage");
     return;
   }
 
   const userId = userInfo._id;
-  // console.log("🔎 userInfo:", userInfo);
-  // console.log("🔑 userId (from sub):", userId);
-
   if (!userId) {
-    alert("Không tìm thấy ID người dùng để cập nhật.");
+    toast.warn("Không tìm thấy ID người dùng để cập nhật.");
     return;
   }
 
@@ -246,25 +255,22 @@ const Navbar = () => {
 
     if (res.ok) {
       const updatedUser = await res.json();
-      console.log("✅ updatedUser từ server:", updatedUser);
 
-      // Giữ lại `sub` nếu backend không trả về
       const newUserInfo = {
         ...updatedUser,
-        _id: userId, // thêm lại sub để lần sau sử dụng
+        _id: userId, 
       };
 
       localStorage.setItem("user_info", JSON.stringify(newUserInfo));
       setUserInfo(newUserInfo);
-      alert("Cập nhật thông tin thành công!");
+      toast.success("Cập nhật thông tin thành công!");
       setShowProfileModal(false);
     } else {
       const err = await res.json();
-      alert("Lỗi cập nhật: " + (err.message || res.statusText));
+      toast.error("Lỗi cập nhật: " + (err.message || res.statusText));
     }
   } catch (err) {
-    console.error("❌ Lỗi hệ thống khi cập nhật hồ sơ:", err);
-    alert("Lỗi hệ thống khi cập nhật hồ sơ!");
+    toast.error("Lỗi hệ thống khi cập nhật hồ sơ!");
   } finally {
     setProfileLoading(false);
   }
@@ -273,7 +279,7 @@ const Navbar = () => {
     <>
        <nav className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-300 bg-white relative transition-all">
         <NavLink to="/">
-          <img className="h-9" src={assets.logo} alt="logo" />
+          <img className="h-9" src={assets.logoe} alt="logo" />
         </NavLink>
 
         <div className="hidden sm:flex items-center gap-8">
@@ -407,6 +413,8 @@ const Navbar = () => {
       <TextField
         fullWidth
         label="Số điện thoại"
+        type="tel"
+        inputProps={{ maxLength: 10, pattern: "[0-9]*" }}
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
       />
@@ -492,6 +500,8 @@ const Navbar = () => {
       <TextField
         fullWidth
         label="Số điện thoại"
+        type="tel"
+        inputProps={{ maxLength: 10, pattern: "[0-9]*" }}
         value={userInfo?.phone || ""}
         onChange={(e) =>
           setUserInfo((prev: any) => ({ ...prev, phone: e.target.value }))

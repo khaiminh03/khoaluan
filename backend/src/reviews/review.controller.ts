@@ -2,35 +2,52 @@ import {
   Controller,
   Post,
   Body,
-  UseGuards,
-  Req,
   HttpStatus,
   HttpCode,
-  Get, 
-  Param
+  Get,
+  Delete,
+  Param,
+  UnauthorizedException,
+  BadRequestException,
+
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ReviewService } from './review.service';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Controller('reviews')
 export class ReviewController {
-  constructor(private readonly reviewService: ReviewService) {}
+  constructor(
+    private readonly reviewService: ReviewService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard) // ✅ chỉ yêu cầu token khi tạo đánh giá
   @HttpCode(HttpStatus.CREATED)
-  async create(@Req() req, @Body() dto: CreateReviewDto) {
-    const userId = req.user?.userId;
+  async create(@Body() dto: CreateReviewDto & { accessToken: string }) {
+    const decoded = this.jwtService.verify(dto.accessToken);
+    const userId = decoded.sub;
+
     if (!userId) {
-      throw new Error('Không xác định được người dùng từ token.');
+      throw new UnauthorizedException('Token không hợp lệ.');
     }
+
     return this.reviewService.create(userId, dto);
   }
 
-  // ✅ mở public
   @Get('product/:id')
   async getReviewsByProduct(@Param('id') id: string) {
     return this.reviewService.getReviewsByProductId(id);
+  }
+  @Get('all')
+async getAllReviews() {
+  return this.reviewService.findAll();
+}
+ @Delete(':id')
+  async deleteReview(@Param('id') id: string) {
+    if (!id) {
+      throw new BadRequestException('Thiếu ID');
+    }
+    return this.reviewService.deleteReview(id);
   }
 }

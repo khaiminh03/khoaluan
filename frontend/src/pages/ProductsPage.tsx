@@ -17,47 +17,6 @@ interface Product {
   quantity?: string;
 }
 
-const ViewProductModal = ({ open, onClose, product }: {
-  open: boolean;
-  onClose: () => void;
-  product: Product | null;
-}) => {
-  if (!product) return null;
-
-  return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 ${open ? '' : 'hidden'}`}>
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-xl">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">📋 Chi tiết sản phẩm</h2>
-        <div className="flex flex-col md:flex-row gap-6 items-start">
-          <img
-            src={`http://localhost:5000/uploads/products/${product.images[0]}`}
-            alt={product.name}
-            className="w-full md:w-1/2 max-h-64 object-contain rounded-lg border"
-          />
-          <div className="flex-1 text-sm text-gray-700 space-y-2">
-            <p><span className="font-medium text-gray-900">Tên:</span> {product.name}</p>
-            <p><span className="font-medium text-gray-900">Giá:</span> {product.price.toLocaleString()}đ</p>
-            <p><span className="font-medium text-gray-900">Xuất xứ:</span> {product.origin}</p>
-            <p><span className="font-medium text-gray-900">Danh mục:</span> {product.category}</p>
-            <p><span className="font-medium text-gray-900">Tồn kho:</span> {product.stock ?? 'Không rõ'}</p>
-            <p><span className="font-medium text-gray-900">Đơn vị:</span> {product.unitType ?? 'Không rõ'}</p>
-            <p><span className="font-medium text-gray-900">Mô tả:</span> {product.description ?? 'Không có mô tả'}</p>
-          </div>
-        </div>
-        <div className="text-right mt-6">
-          <button
-            onClick={onClose}
-            className="inline-flex items-center px-5 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition"
-          >
-            Đóng
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
 const EditProductModal = ({ open, onClose, product, onSave }: {
   open: boolean,
   onClose: () => void,
@@ -146,8 +105,6 @@ const ProductsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [viewOpen, setViewOpen] = useState(false);
-  const [viewProduct, setViewProduct] = useState<Product | null>(null);
 
   const fetchCategory = async (categoryId: string) => {
     try {
@@ -192,11 +149,26 @@ const ProductsPage = () => {
     setEditOpen(true);
   };
 
-  const handleViewClick = (product: Product) => {
-    setViewProduct(product);
-    setViewOpen(true);
-  };
+const handleDelete = async (productId: string) => {
+  const confirm = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?");
+  if (!confirm) return;
 
+  try {
+    const response = await fetch(`http://localhost:5000/products/${productId}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      throw new Error("Xóa sản phẩm thất bại");
+    }
+
+    alert("🗑️ Đã xóa sản phẩm");
+    fetchProducts(); // refresh lại danh sách
+  } catch (error) {
+    console.error("❌ Lỗi khi xóa sản phẩm:", error);
+    alert("Không thể xóa sản phẩm");
+  }
+};
   const handleSave = async (updatedProduct: Product) => {
     try {
       await fetch(`http://localhost:5000/products/${updatedProduct._id}`, {
@@ -215,9 +187,9 @@ const ProductsPage = () => {
   if (error) return <div>{error}</div>;
 
   return (
-    <div className="flex-1 py-10 flex flex-col justify-between">
-      <div className="w-full md:p-10 p-4">
-        <h2 className="pb-4 text-lg font-medium">Tất cả sản phẩm</h2>
+    <div className="flex-1 py-2 flex flex-col justify-between">
+      <div className="w-full">
+        <h2 className="pb-4 text-2xl text-lg font-medium">DANH SÁCH SẢN PHẨM</h2>
 
         <div className="flex flex-col items-center max-w-4xl w-full overflow-hidden rounded-md bg-white border border-gray-500/20">
           <table className="md:table-auto table-fixed w-full overflow-hidden">
@@ -225,6 +197,7 @@ const ProductsPage = () => {
               <tr>
                 <th className="px-4 py-3 font-semibold truncate">Sản phẩm</th>
                 <th className="px-4 py-3 font-semibold truncate">Danh mục</th>
+                <th className="px-4 py-3 font-semibold truncate">Tồn kho</th>
                 <th className="px-4 py-3 font-semibold truncate hidden md:block">Giá</th>
                 <th className="px-4 py-3 font-semibold truncate">Chức năng</th>
               </tr>
@@ -243,21 +216,22 @@ const ProductsPage = () => {
                     <span className="truncate max-sm:hidden w-full">{product.name}</span>
                   </td>
                   <td className="px-4 py-3">{product.category}</td>
-                  <td className="px-4 py-3">{product.price}đ</td>
+                  <td className="px-4 py-3">{product.stock}</td>
+                  <td className="px-4 py-3">{product.price.toLocaleString('vi-VN')}đ</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-col md:flex-row md:space-x-2 space-y-2 md:space-y-0">
                     <button
                       onClick={() => handleEditClick(product)}
-                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                      className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition"
                     >
                       Chỉnh sửa
                     </button>
                     <button
-                      onClick={() => handleViewClick(product)}
-                      className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition"
-                    >
-                      Xem
-                    </button>
+                    onClick={() => handleDelete(product._id)}
+                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                  >
+                    Xóa
+                  </button>
                   </div>
                   </td>
                 </tr>
@@ -273,14 +247,6 @@ const ProductsPage = () => {
           onClose={() => setEditOpen(false)}
           product={selectedProduct}
           onSave={handleSave}
-        />
-      )}
-
-      {viewProduct && (
-        <ViewProductModal
-          open={viewOpen}
-          onClose={() => setViewOpen(false)}
-          product={viewProduct}
         />
       )}
     </div>

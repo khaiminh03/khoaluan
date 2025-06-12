@@ -42,6 +42,10 @@ export class Order {
   @Prop() 
   status?: string;
 
+  @Prop({ enum: ['Chờ xác nhận', 'Đã xác nhận', 'Đang giao hàng','Giao thất bại', 'Hoàn thành'], 
+  default: 'Chờ xác nhận' })
+  shippingStatus: string;
+
   @Prop({ default: false })
   isPaid: boolean;
 

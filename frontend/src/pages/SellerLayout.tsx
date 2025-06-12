@@ -1,8 +1,9 @@
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation} from "react-router-dom";
+import { assets } from "../assets/assets";
 
 const SellerLayout = () => {
   const location = useLocation();
-  const navigate = useNavigate();
+
 
   const sidebarLinks = [
     { name: "Thêm sản phẩm", path: "/seller/add-product" },
@@ -14,7 +15,7 @@ const SellerLayout = () => {
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user_info");
-    navigate("/"); // Quay về trang chủ
+    window.location.replace("/"); 
   };
 
   return (
@@ -24,7 +25,7 @@ const SellerLayout = () => {
         <a href="#">
           <img
             className="h-9"
-            src="https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/dummyLogo/dummyLogoColored.svg"
+            src={assets.logoe}
             alt="dummyLogoColored"
           />
         </a>
@@ -49,7 +50,7 @@ const SellerLayout = () => {
               key={index}
               className={`flex items-center py-3 px-4 gap-3 ${
                 location.pathname === item.path
-                  ? "border-r-4 md:border-r-[6px] bg-indigo-500/10 border-indigo-500 text-indigo-500"
+                  ? "border-r-4 md:border-r-[6px] bg-green-500/10 border-green-500 text-green-500"
                   : "hover:bg-gray-100/90 border-white text-gray-700"
               }`}
             >

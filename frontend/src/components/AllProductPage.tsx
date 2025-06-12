@@ -1,4 +1,4 @@
-import  { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface Product {
   _id: string;
@@ -9,6 +9,8 @@ interface Product {
   images: string[];
   category: string;
   supplierId: string;
+  supplierName?: string;
+  supplierPhone?: string;
   origin: string;
   description?: string;
   stock?: number;
@@ -26,18 +28,20 @@ const ViewProductModal = ({ open, onClose, product }: {
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 ${open ? '' : 'hidden'}`}>
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-xl">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">📋 Chi tiết sản phẩm</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Chi tiết sản phẩm</h2>
         <div className="flex flex-col md:flex-row gap-6 items-start">
           <img
             src={`http://localhost:5000/uploads/products/${product.images[0]}`}
             alt={product.name}
-            className="w-full md:w-1/2 max-h-64 object-contain rounded-lg border"
+            className="w-full md:w-1/2 max-h-64 object-contain rounded-lg border border-gray-500/30"
           />
           <div className="flex-1 text-sm text-gray-700 space-y-2">
             <p><span className="font-medium text-gray-900">Tên:</span> {product.name}</p>
-            <p><span className="font-medium text-gray-900">Giá:</span> {product.price.toLocaleString()}đ</p>
+            <p><span className="font-medium text-gray-900">Giá:</span> {product.price.toLocaleString('vi-VN')}đ</p>
             <p><span className="font-medium text-gray-900">Xuất xứ:</span> {product.origin}</p>
             <p><span className="font-medium text-gray-900">Danh mục:</span> {product.category}</p>
+            <p><span className="font-medium text-gray-900">Nhà cung cấp:</span> {product.supplierName ?? 'Không rõ'}</p>
+            <p><span className="font-medium text-gray-900">SĐT nhà cung cấp:</span> {product.supplierPhone ?? 'Không rõ'}</p>
             <p><span className="font-medium text-gray-900">Tồn kho:</span> {product.stock ?? 'Không rõ'}</p>
             <p><span className="font-medium text-gray-900">Đơn vị:</span> {product.unitType ?? 'Không rõ'}</p>
             <p><span className="font-medium text-gray-900">Mô tả:</span> {product.description ?? 'Không có mô tả'}</p>
@@ -46,7 +50,7 @@ const ViewProductModal = ({ open, onClose, product }: {
         <div className="text-right mt-6">
           <button
             onClick={onClose}
-            className="inline-flex items-center px-5 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition"
+            className="inline-flex items-center px-5 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition"
           >
             Đóng
           </button>
@@ -75,6 +79,24 @@ const AllProductPage = () => {
     }
   };
 
+  const fetchSupplierInfo = async (supplierId: string) => {
+    try {
+      const res = await fetch(`http://localhost:5000/store-profiles/by-user/${supplierId}`);
+      if (!res.ok) throw new Error('Không thể lấy hồ sơ nhà cung cấp');
+      const data = await res.json();
+      return {
+        name: data.storeName || 'Không rõ',
+        phone: data.phone || 'Không rõ',
+      };
+    } catch (error) {
+      console.error(error);
+      return {
+        name: 'Không rõ',
+        phone: 'Không rõ',
+      };
+    }
+  };
+
   const fetchProducts = async () => {
     try {
       const response = await fetch('http://localhost:5000/products');
@@ -82,8 +104,13 @@ const AllProductPage = () => {
       const data = await response.json();
 
       for (let product of data) {
-        const categoryName = await fetchCategory(product.categoryId);
+        const [categoryName, supplierInfo] = await Promise.all([
+          fetchCategory(product.categoryId),
+          fetchSupplierInfo(product.supplierId),
+        ]);
         product.category = categoryName;
+        product.supplierName = supplierInfo.name;
+        product.supplierPhone = supplierInfo.phone;
       }
 
       setProducts(data);
@@ -134,7 +161,7 @@ const AllProductPage = () => {
                     <span className="truncate max-sm:hidden w-full">{product.name}</span>
                   </td>
                   <td className="px-4 py-3">{product.category}</td>
-                  <td className="px-4 py-3">{product.price}đ</td>
+                  <td className="px-4 py-3">{product.price.toLocaleString('vi-VN')}đ</td>
                   <td className="px-4 py-3">
                     <button
                       onClick={() => handleViewClick(product)}

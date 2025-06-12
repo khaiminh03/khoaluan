@@ -43,6 +43,14 @@ async getOrdersBySupplier(@Param('id') supplierId: string) {
   ) {
     return this.ordersService.updateOrderStatus(orderId, status);
   }
+  @Patch(':id/shipping-status')
+updateShippingStatus(
+  @Param('id') orderId: string,
+  @Body('shippingStatus') shippingStatus: string,
+) {
+  return this.ordersService.updateShippingStatus(orderId, shippingStatus);
+}
+
   @Get('supplier/:id/revenue')
 async getRevenueBySupplier(
   @Param('id') supplierId: string,
@@ -59,4 +67,63 @@ async getOrderById(@Param('id') id: string) {
   }
   return order;
 }
+
+//
+ @Get('supplier/:id/daily-revenue')
+  async getDailyRevenue(
+    @Param('id') supplierId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.ordersService.getDailyRevenue(supplierId, from, to);
+  }
+
+  @Get('supplier/:id/top-products')
+  async getTopProducts(
+    @Param('id') supplierId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.ordersService.getTopProducts(supplierId, from, to);
+  }
+
+  @Get('supplier/:id/order-status')
+  async getOrderStatusSummary(
+    @Param('id') supplierId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.ordersService.getOrderStatusSummary(supplierId, from, to);
+  }
+// doanh thu admin
+// Tổng doanh thu theo ngày, tháng, năm
+// 1. Tổng doanh thu theo ngày / tháng / năm
+  @Get('revenue-summary')
+  getRevenueSummary(@Query('unit') unit: 'day' | 'month' | 'year') {
+    return this.ordersService.getRevenueSummaryByPeriod(unit);
+  }
+
+  // 2. Doanh thu theo nhà cung cấp
+  @Get('supplier-revenue')
+  getRevenueBySuppliers() {
+    return this.ordersService.getRevenueGroupedBySuppliers();
+  }
+
+  // 3. Tổng số đơn hàng và đơn hàng hoàn thành
+  @Get('order-summary')
+  getOrderSummary() {
+    return this.ordersService.getOrderCountSummary();
+  }
+
+  // 4. Tổng số sản phẩm đã được duyệt
+  @Get('product-count')
+  getTotalApprovedProducts() {
+    return this.ordersService.getTotalApprovedProducts();
+  }
+
+  // 5. Hàng tồn kho theo loại nông sản
+  @Get('stock-by-category')
+  getStockByCategory() {
+    return this.ordersService.getStockByCategory();
+  }
 }

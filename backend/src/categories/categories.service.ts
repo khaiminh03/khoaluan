@@ -27,21 +27,27 @@ export class CategoriesService {
     return category;
   }
 
-  async update(id: string, updateData: Partial<CreateCategoryDto>): Promise<Category> {
-    const updatedCategory = await this.categoryModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
-    if (!updatedCategory) {
-      throw new NotFoundException(`Category with id ${id} not found`);
-    }
-    return updatedCategory;
+  // async update(id: string, updateData: Partial<CreateCategoryDto>): Promise<Category> {
+  //   const updatedCategory = await this.categoryModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
+  //   if (!updatedCategory) {
+  //     throw new NotFoundException(`Category with id ${id} not found`);
+  //   }
+  //   return updatedCategory;
+  // }
+async update(id: string, updateData: Partial<CreateCategoryDto>): Promise<Category> {
+  const updatedCategory = await this.categoryModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
+  if (!updatedCategory) {
+    throw new NotFoundException(`Category with id ${id} not found`);
   }
-
+  return updatedCategory;
+}
   async remove(id: string): Promise<void> {
     const result = await this.categoryModel.findByIdAndDelete(id).exec();
     if (!result) {
       throw new NotFoundException(`Category with id ${id} not found`);
     }
   }
-   async findCategoryById(categoryId: string): Promise<Category | null> {
-    return this.categoryModel.findById(categoryId).exec();
-  }
+  //  async findCategoryById(categoryId: string): Promise<Category | null> {
+  //   return this.categoryModel.findById(categoryId).exec();
+  // }
 }
